@@ -1,18 +1,27 @@
 <template>
-  <aside class="w-64 min-h-screen p-4 bg-base-300">
+  <aside class="relative w-64 min-h-screen p-4 bg-base-300">
     <h2 class="text-lg font-bold mb-2">Proyectos</h2>
     <p v-if="!projects.length" class="text-sm text-gray-400 mb-4">
       No hay proyectos
     </p>
 
-    <ul class="menu rounded-box w-full">
-      <li v-for="p in projects" :key="p.id" class="mb-2">
-        <details :open="isOpen(p.id)" @click="selectAndToggle(p.id)">
-          <summary class="flex justify-between items-center cursor-pointer">
+    <ul class="menu bg-base-100 rounded-box w-full">
+      <li
+        v-for="p in projects"
+        :key="p.id"
+        class="mb-2"
+      >
+        <details
+          :open="isOpen(p.id)"
+          @click="selectAndToggle(p.id)"
+        >
+          <summary
+            class="flex justify-between items-center cursor-pointer p-2 rounded hover:bg-base-200"
+          >
             <span class="flex-1">
               {{ p.name }} ({{ projectProgress(p) }}%)
             </span>
-            <span>
+            <span class="flex-shrink-0">
               <svg
                 v-if="isOpen(p.id)"
                 xmlns="http://www.w3.org/2000/svg"
@@ -38,15 +47,15 @@
             </span>
           </summary>
 
-          <ul class="pl-4 mt-2">
+          <ul class="pl-4 mt-2 space-y-1">
             <li
               v-for="t in p.tasks"
               :key="t.id"
-              class="flex items-center py-1"
+              class="flex items-center"
             >
               <input
                 type="checkbox"
-                class="mr-2"
+                class="checkbox checkbox-sm mr-2"
                 :checked="t.completed"
                 @change.stop="toggleTask(p.id, t.id)"
               />
@@ -54,9 +63,9 @@
                 {{ t.name }}
               </span>
             </li>
-            <li class="mt-1">
+            <li>
               <button
-                class="btn btn-xs btn-outline"
+                class="btn btn-xs btn-outline mt-1"
                 @click.stop="newTask(p.id)"
               >
                 + Tarea
@@ -66,58 +75,101 @@
         </details>
       </li>
 
+      <!-- Botón estático en el menú -->
       <li class="mt-4">
         <button
           class="btn btn-sm btn-primary w-full"
-          @click="newProject"
+          @click="openProjectModal"
         >
           + Proyecto
         </button>
       </li>
     </ul>
+
+    <!-- FloatingButton: usa sus clases por defecto -->
+    <FloatingButton @click="openProjectModal" />
+
+    <!-- ProjectModal con slots -->
+    <ProjectModal ref="projectModal">
+      <!-- Slot de título -->
+      <template #title>
+        <h3 class="text-lg font-bold">Nuevo Proyecto</h3>
+      </template>
+
+      <!-- Slot por defecto: input -->
+      <template #default>
+        <input
+          v-model="newProjectName"
+          type="text"
+          placeholder="Nombre del proyecto"
+          class="input input-bordered w-full"
+        />
+      </template>
+
+      <!-- Slot footer: botones Cancelar / Agregar -->
+      <template #footer>
+        <button class="btn mr-2" @click="closeProjectModal">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" @click="submitProject">
+          Agregar
+        </button>
+      </template>
+    </ProjectModal>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useProjectsStore } from '@/stores/projects'
+import FloatingButton from '@/components/FloatingButton.vue'
+import ProjectModal from '@/components/ProjectModal.vue'
 
-const store = useProjectsStore()
-const projects = store.projects
-const openList = ref<number[]>([])
+const store         = useProjectsStore()
+const projects      = store.projects
+const openList      = ref<number[]>([])
+const projectModal  = ref<InstanceType<typeof ProjectModal> | null>(null)
+const newProjectName= ref('')
 
+// Sidebar helpers
 function isOpen(id: number) {
   return openList.value.includes(id)
 }
-
 function selectAndToggle(id: number) {
   store.selectProject(id)
-  if (isOpen(id)) openList.value = openList.value.filter(x => x !== id)
-  else openList.value.push(id)
+  openList.value = isOpen(id)
+    ? openList.value.filter(x => x !== id)
+    : [...openList.value, id]
 }
 
-function newProject() {
-  const name = prompt('Nombre del nuevo proyecto:')
-  if (name) store.addProject(name)
-}
-
+// Tareas
 function newTask(pid: number) {
   const name = prompt('Nombre de la tarea:')
   if (name) store.addTask(pid, name)
 }
-
 function toggleTask(pid: number, tid: number) {
   store.toggleTask(pid, tid)
 }
 
-// Calcula % completado para un proyecto dado
-function projectProgress(p: {
-  id: number
-  name: string
-  tasks: { completed: boolean }[]
-}) {
+// Progreso
+function projectProgress(p: { tasks: { completed: boolean }[] }) {
   if (!p.tasks.length) return 0
   const done = p.tasks.filter(t => t.completed).length
   return Math.round((done / p.tasks.length) * 100)
+}
+
+// Modal controls
+function openProjectModal() {
+  projectModal.value?.open()
+}
+function closeProjectModal() {
+  projectModal.value?.close()
+}
+function submitProject() {
+  const name = newProjectName.value.trim()
+  if (!name) return
+  store.addProject(name)
+  newProjectName.value = ''
+  closeProjectModal()
 }
 </script>
