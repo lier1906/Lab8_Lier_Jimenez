@@ -47,6 +47,7 @@
             </span>
           </summary>
 
+          <!-- Solo mostrar tareas con check -->
           <ul class="pl-4 mt-2 space-y-1">
             <li
               v-for="t in p.tasks"
@@ -63,19 +64,11 @@
                 {{ t.name }}
               </span>
             </li>
-            <li>
-              <button
-                class="btn btn-xs btn-outline mt-1"
-                @click.stop="newTask(p.id)"
-              >
-                + Tarea
-              </button>
-            </li>
           </ul>
         </details>
       </li>
 
-      <!-- Botón estático en el menú -->
+      <!-- Botón para crear proyectos -->
       <li class="mt-4">
         <button
           class="btn btn-sm btn-primary w-full"
@@ -84,19 +77,26 @@
           + Proyecto
         </button>
       </li>
+
+      <!-- Ir al resumen -->
+      <li class="mt-2">
+        <router-link
+          to="/resumen"
+          class="btn btn-sm btn-outline btn-info w-full"
+        >
+          Ver Resumen
+        </router-link>
+      </li>
     </ul>
 
-    <!-- FloatingButton: usa sus clases por defecto -->
+    <!-- Floating button para abrir el modal -->
     <FloatingButton @click="openProjectModal" />
 
-    <!-- ProjectModal con slots -->
+    <!-- Modal de nuevo proyecto -->
     <ProjectModal ref="projectModal">
-      <!-- Slot de título -->
       <template #title>
         <h3 class="text-lg font-bold">Nuevo Proyecto</h3>
       </template>
-
-      <!-- Slot por defecto: input -->
       <template #default>
         <input
           v-model="newProjectName"
@@ -105,15 +105,9 @@
           class="input input-bordered w-full"
         />
       </template>
-
-      <!-- Slot footer: botones Cancelar / Agregar -->
       <template #footer>
-        <button class="btn mr-2" @click="closeProjectModal">
-          Cancelar
-        </button>
-        <button class="btn btn-primary" @click="submitProject">
-          Agregar
-        </button>
+        <button class="btn mr-2" @click="closeProjectModal">Cancelar</button>
+        <button class="btn btn-primary" @click="submitProject">Agregar</button>
       </template>
     </ProjectModal>
   </aside>
@@ -121,50 +115,49 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import FloatingButton from '@/components/FloatingButton.vue'
 import ProjectModal from '@/components/ProjectModal.vue'
 
-const store         = useProjectsStore()
-const projects      = store.projects
-const openList      = ref<number[]>([])
-const projectModal  = ref<InstanceType<typeof ProjectModal> | null>(null)
-const newProjectName= ref('')
+const store = useProjectsStore()
+const router = useRouter()
 
-// Sidebar helpers
+const projects = store.projects
+const openList = ref<number[]>([])
+const projectModal = ref<InstanceType<typeof ProjectModal> | null>(null)
+const newProjectName = ref('')
+
 function isOpen(id: number) {
   return openList.value.includes(id)
 }
+
 function selectAndToggle(id: number) {
   store.selectProject(id)
   openList.value = isOpen(id)
     ? openList.value.filter(x => x !== id)
     : [...openList.value, id]
+  router.push('/projects') // Redirige a la vista de tareas del proyecto
 }
 
-// Tareas
-function newTask(pid: number) {
-  const name = prompt('Nombre de la tarea:')
-  if (name) store.addTask(pid, name)
-}
 function toggleTask(pid: number, tid: number) {
   store.toggleTask(pid, tid)
 }
 
-// Progreso
 function projectProgress(p: { tasks: { completed: boolean }[] }) {
   if (!p.tasks.length) return 0
   const done = p.tasks.filter(t => t.completed).length
   return Math.round((done / p.tasks.length) * 100)
 }
 
-// Modal controls
 function openProjectModal() {
   projectModal.value?.open()
 }
+
 function closeProjectModal() {
   projectModal.value?.close()
 }
+
 function submitProject() {
   const name = newProjectName.value.trim()
   if (!name) return
