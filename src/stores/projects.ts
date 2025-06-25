@@ -27,6 +27,22 @@ export const useProjectsStore = defineStore('projects', {
     }
   },
   actions: {
+    load() {
+      const data = localStorage.getItem('lab8-projects')
+      if (data) {
+        const parsed = JSON.parse(data)
+        this.projects = parsed.projects || []
+        this._nextProjectId = parsed._nextProjectId || 1
+        this._nextTaskId = parsed._nextTaskId || 1
+      }
+    },
+    save() {
+      localStorage.setItem('lab8-projects', JSON.stringify({
+        projects: this.projects,
+        _nextProjectId: this._nextProjectId,
+        _nextTaskId: this._nextTaskId,
+      }))
+    },
     addProject(name: string) {
       this.projects.push({
         id: this._nextProjectId++,
@@ -34,6 +50,7 @@ export const useProjectsStore = defineStore('projects', {
         tasks: []
       })
       this.selectedId = this._nextProjectId - 1
+      this.save()
     },
     selectProject(id: number) {
       this.selectedId = id
@@ -46,11 +63,35 @@ export const useProjectsStore = defineStore('projects', {
         name,
         completed: false
       })
+      this.save()
     },
     toggleTask(projectId: number, taskId: number) {
       const p = this.projects.find(x => x.id === projectId)
       const t = p?.tasks.find(t => t.id === taskId)
       if (t) t.completed = !t.completed
+      this.save()
+    },
+    deleteTask(projectId: number, taskId: number) {
+      const p = this.projects.find(x => x.id === projectId)
+      if (!p) return
+      p.tasks = p.tasks.filter(t => t.id !== taskId)
+      this.save()
+    },
+    deleteProject(projectId: number) {
+      this.projects = this.projects.filter(p => p.id !== projectId)
+      if (this.selectedId === projectId) this.selectedId = null
+      this.save()
+    },
+    renameProject(projectId: number, newName: string) {
+      const p = this.projects.find(p => p.id === projectId)
+      if (p) p.name = newName
+      this.save()
+    },
+    renameTask(projectId: number, taskId: number, newName: string) {
+      const p = this.projects.find(p => p.id === projectId)
+      const t = p?.tasks.find(t => t.id === taskId)
+      if (t) t.name = newName
+      this.save()
     }
   }
 })

@@ -57,10 +57,12 @@ import { useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores/projects'
 import FloatingButton from '@/components/FloatingButton.vue'
 import ProjectModal from '@/components/ProjectModal.vue'
+import { computed } from 'vue'
+//const projects = computed(() => store.projects)
 
 const store = useProjectsStore()
 const router = useRouter()
-const projects = store.projects
+const projects = computed(() => store.projects)
 const openList = ref<number[]>([])
 const newProjectName = ref('')
 const projectModal = ref<InstanceType<typeof ProjectModal> | null>(null)

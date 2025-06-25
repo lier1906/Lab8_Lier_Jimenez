@@ -1,7 +1,6 @@
 <template>
   <div class="p-6 flex-1 bg-base-200">
     <h2 class="text-2xl font-bold mb-6">Resumen de Proyectos</h2>
-
     <div class="overflow-x-auto">
       <table class="table w-full">
         <thead>
@@ -33,7 +32,6 @@
 
 <script setup lang="ts">
 import { useProjectsStore } from '@/stores/projects'
-
 const store = useProjectsStore()
 const projects = store.projects
 
